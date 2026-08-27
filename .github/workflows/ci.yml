@@ -16,12 +16,12 @@ jobs:
       - name: devbot-agent tests
         working-directory: services/devbot-agent
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
           python -m pytest tests/ -v
       - name: demo-cli tests
         working-directory: services/demo-cli
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
           python -m pytest tests/ -v
 
   secret-scan:

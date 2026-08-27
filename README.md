@@ -115,8 +115,8 @@ Docker Compose · raw Kubernetes manifests · Helm · pytest.
 ## Testing
 
 ```bash
-cd services/devbot-agent && pip install -r requirements.txt && python -m pytest tests/ -v
-cd services/demo-cli     && pip install -r requirements.txt && python -m pytest tests/ -v
+cd services/devbot-agent && pip install -r requirements-dev.txt && python -m pytest tests/ -v
+cd services/demo-cli     && pip install -r requirements-dev.txt && python -m pytest tests/ -v
 ```
 
 ## Deployment
