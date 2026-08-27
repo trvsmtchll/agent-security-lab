@@ -1,0 +1,19 @@
+title = "agent-security-lab gitleaks config"
+[extend]
+useDefault = true
+
+# The demo intentionally ships placeholder/sample secrets in .env.example and
+# k8s/helm templates. Allow those specific, non-live values only.
+[allowlist]
+description = "Known-safe placeholders in this teaching repo"
+regexes = [
+  '''sk-ant-xxx''',
+  '''sk-xxx''',
+  '''ghp_xxx''',
+  '''devbot_secret''',
+  '''CHANGE_ME''',
+  '''Q0hBTkdFX01F''',
+]
+paths = [
+  '''\.env\.example$''',
+]

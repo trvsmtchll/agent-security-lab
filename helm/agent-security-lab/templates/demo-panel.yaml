@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-panel
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: demo-panel
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.demoPanel.replicas }}
+  selector:
+    matchLabels:
+      app: demo-panel
+  template:
+    metadata:
+      labels:
+        app: demo-panel
+        app.kubernetes.io/name: demo-panel
+    spec:
+      containers:
+        - name: demo-panel
+          image: "{{ .Values.demoPanel.image.repository }}:{{ .Values.demoPanel.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            {{- toYaml .Values.demoPanel.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-panel
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: demo-panel
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.demoPanel.service.type }}
+  selector:
+    app: demo-panel
+  ports:
+    - port: {{ .Values.demoPanel.service.port }}
+      targetPort: 80
+      protocol: TCP

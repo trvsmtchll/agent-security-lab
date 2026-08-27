@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devbot-agent
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: devbot-agent
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.devbotAgent.replicas }}
+  selector:
+    matchLabels:
+      {{- /* These selector labels MUST match the pod template labels below.
+             They are parameterized via values.yaml and default to the values
+             that the Sentinel NetworkPolicy CRD targets. */ -}}
+      {{- toYaml .Values.devbotAgent.labels | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        # These labels are critical — the Sentinel NetworkPolicy CRD
+        # targets workloads with app: devbot, tier: ai-agent
+        {{- toYaml .Values.devbotAgent.labels | nindent 8 }}
+        app.kubernetes.io/name: devbot-agent
+    spec:
+      containers:
+        - name: devbot-agent
+          image: "{{ .Values.devbotAgent.image.repository }}:{{ .Values.devbotAgent.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.devbotAgent.service.port }}
+          envFrom:
+            - configMapRef:
+                name: devbot-config
+            - secretRef:
+                name: devbot-secrets
+          securityContext:
+            capabilities:
+              add:
+                - NET_RAW
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.devbotAgent.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.devbotAgent.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devbot-agent
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: devbot-agent
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.devbotAgent.service.type }}
+  selector:
+    {{- toYaml .Values.devbotAgent.labels | nindent 4 }}
+  ports:
+    - port: {{ .Values.devbotAgent.service.port }}
+      targetPort: {{ .Values.devbotAgent.service.port }}
+      protocol: TCP

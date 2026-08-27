@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiki
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: wiki
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wiki
+  template:
+    metadata:
+      labels:
+        app: wiki
+        app.kubernetes.io/name: wiki
+    spec:
+      containers:
+        - name: wiki
+          image: agent-security-lab/wiki:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wiki
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: wiki
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: wiki
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP

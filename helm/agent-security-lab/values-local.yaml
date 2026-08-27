@@ -1,0 +1,72 @@
+# values-local.yaml — Overrides for local development
+# Usage: helm install agent-security-lab ./helm/agent-security-lab -f helm/agent-security-lab/values-local.yaml
+
+imagePullPolicy: IfNotPresent
+
+postgres:
+  image:
+    tag: latest
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+wiki:
+  image:
+    tag: latest
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+attackerServer:
+  image:
+    tag: latest
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+devbotAgent:
+  image:
+    tag: latest
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+devbotUi:
+  image:
+    tag: latest
+  service:
+    type: NodePort
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+demoPanel:
+  image:
+    tag: latest
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-panel
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: demo-panel
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-panel
+  template:
+    metadata:
+      labels:
+        app: demo-panel
+        app.kubernetes.io/name: demo-panel
+    spec:
+      containers:
+        - name: demo-panel
+          image: agent-security-lab/demo-panel:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-panel
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: demo-panel
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  type: NodePort
+  selector:
+    app: demo-panel
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devbot-ui
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: devbot-ui
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devbot-ui
+  template:
+    metadata:
+      labels:
+        app: devbot-ui
+        app.kubernetes.io/name: devbot-ui
+    spec:
+      containers:
+        - name: devbot-ui
+          image: agent-security-lab/devbot-ui:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devbot-ui
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: devbot-ui
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  type: LoadBalancer
+  selector:
+    app: devbot-ui
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attacker-server
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: attacker-server
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: attacker-server
+  template:
+    metadata:
+      labels:
+        app: attacker-server
+        app.kubernetes.io/name: attacker-server
+    spec:
+      containers:
+        - name: attacker-server
+          image: agent-security-lab/attacker-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: attacker-server
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: attacker-server
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: attacker-server
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP

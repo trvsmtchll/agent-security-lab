@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devbot-agent
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: devbot-agent
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devbot
+      tier: ai-agent
+  template:
+    metadata:
+      labels:
+        # These labels are critical — the Sentinel NetworkPolicy CRD
+        # targets workloads with app: devbot, tier: ai-agent
+        app: devbot
+        tier: ai-agent
+        app.kubernetes.io/name: devbot-agent
+    spec:
+      containers:
+        - name: devbot-agent
+          image: agent-security-lab/devbot-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: devbot-config
+            - secretRef:
+                name: devbot-secrets
+          securityContext:
+            capabilities:
+              add:
+                - NET_RAW
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devbot-agent
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: devbot-agent
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: devbot
+    tier: ai-agent
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP

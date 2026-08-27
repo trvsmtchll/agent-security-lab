@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Install with:  ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
+set -euo pipefail
+
+# 1. Never allow a real .env to be committed.
+if git diff --cached --name-only | grep -qxE '\.env|.*/\.env'; then
+  echo "✋ Refusing to commit a .env file. Only .env.example belongs in git." >&2
+  exit 1
+fi
+
+# 2. Run gitleaks on staged changes if it is installed.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --config .gitleaks.toml
+else
+  echo "ℹ gitleaks not installed; skipping local scan (CI still enforces it)." >&2
+fi

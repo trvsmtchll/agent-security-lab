@@ -1,0 +1,138 @@
+# Default values for agent-security-lab.
+# This is a YAML-formatted file.
+
+# -- Global namespace for all resources
+namespace: ai-agents
+
+# -- Global image pull policy
+imagePullPolicy: IfNotPresent
+
+# -- ConfigMap values (injected into devbot-agent)
+config:
+  DATABASE_URL: "postgresql://devbot:devbot_secret@postgres:5432/api_docs"
+  CUSTOMERS_DATABASE_URL: "postgresql://devbot:devbot_secret@postgres:5432/customers"
+  WIKI_URL: "http://wiki"
+  ATTACKER_SERVER_URL: "http://attacker-server:8080"
+  DEMO_MODE: "live"
+  LLM_PROVIDER: "anthropic"
+  AGENT_HOST: "0.0.0.0"
+  AGENT_PORT: "8000"
+  PROMPT_STYLE: "default"
+
+# -- Secret values (base64-encoded)
+secrets:
+  ANTHROPIC_API_KEY: Q0hBTkdFX01F
+  OPENAI_API_KEY: Q0hBTkdFX01F
+  GITHUB_PAT: Q0hBTkdFX01F
+  GITHUB_EXFIL_REPO: Q0hBTkdFX01F
+  POSTGRES_PASSWORD: ZGV2Ym90X3NlY3JldA==
+
+# -- PostgreSQL
+postgres:
+  replicas: 1
+  image:
+    repository: agent-security-lab/postgres
+    tag: latest
+  persistence:
+    size: 1Gi
+  env:
+    POSTGRES_USER: devbot
+  service:
+    type: ClusterIP
+    port: 5432
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+# -- Internal wiki (nginx)
+wiki:
+  replicas: 1
+  image:
+    repository: agent-security-lab/wiki
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# -- Attacker server (webhook receiver)
+attackerServer:
+  replicas: 1
+  image:
+    repository: agent-security-lab/attacker-server
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# -- DevBot agent (LangGraph + FastAPI)
+devbotAgent:
+  replicas: 1
+  image:
+    repository: agent-security-lab/devbot-agent
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8000
+  # Labels critical for Sentinel CRD targeting
+  labels:
+    app: devbot
+    tier: ai-agent
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+# -- DevBot UI (React SPA)
+devbotUi:
+  replicas: 1
+  image:
+    repository: agent-security-lab/devbot-ui
+    tag: latest
+  service:
+    type: LoadBalancer
+    port: 80
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# -- Demo panel (React control panel)
+demoPanel:
+  replicas: 1
+  image:
+    repository: agent-security-lab/demo-panel
+    tag: latest
+  service:
+    type: NodePort
+    port: 80
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"

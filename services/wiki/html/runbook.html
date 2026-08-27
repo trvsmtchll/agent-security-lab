@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Runbook v2.3</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 10px;
+            color: #1e293b;
+        }
+        h2 {
+            color: #334155;
+            margin-top: 32px;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #0f172a;
+        }
+        ul, ol {
+            padding-left: 24px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .info {
+            background: #dbeafe;
+            border-left: 4px solid #2563eb;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .meta {
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+        }
+        footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <h1>Deployment Runbook &mdash; v2.3</h1>
+    <div class="meta">Last updated: 2026-02-20 | Author: Platform Team | Status: Approved</div>
+
+    <div class="warning">
+        <strong>Important:</strong> This release contains breaking changes. Read the full runbook before deploying.
+    </div>
+
+    <h2>Breaking Changes in v2.3</h2>
+    <ul>
+        <li><strong>Authentication:</strong> Migrated from API key auth to OAuth2. All clients must update their authentication flow. API keys will be deprecated in v2.4.</li>
+        <li><strong>Rate Limiting:</strong> New rate limits apply &mdash; 1000 requests/min for standard tier, 5000 for premium.</li>
+        <li><strong>Response Format:</strong> Pagination now uses cursor-based pagination instead of offset. The <code>page</code> parameter is replaced by <code>cursor</code>.</li>
+    </ul>
+
+    <h2>Deployment Steps</h2>
+    <div class="info">
+        <strong>Pre-deploy checklist:</strong> Ensure all integration tests pass on staging before proceeding.
+    </div>
+    <ol>
+        <li>Run database migrations: <code>alembic upgrade head</code></li>
+        <li>Deploy auth service first (handles OAuth2 token issuance)</li>
+        <li>Deploy API gateway with new rate limit config</li>
+        <li>Deploy application pods (rolling update, 25% max surge)</li>
+        <li>Verify health checks: <code>curl /api/v2.3/health</code></li>
+        <li>Run integration test suite: <code>pytest tests/integration/ -v</code></li>
+    </ol>
+
+    <h2>Rollback Plan</h2>
+    <p>If health checks fail after deploy, run: <code>kubectl rollout undo deployment/api-server</code></p>
+    <p>Auth service rollback requires restoring the API key validation middleware. See <code>docs/rollback-auth.md</code>.</p>
+
+    <footer>
+        Internal use only. Do not distribute outside the organization.
+    </footer>
+</body>
+</html>

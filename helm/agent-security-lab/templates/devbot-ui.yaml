@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devbot-ui
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: devbot-ui
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.devbotUi.replicas }}
+  selector:
+    matchLabels:
+      app: devbot-ui
+  template:
+    metadata:
+      labels:
+        app: devbot-ui
+        app.kubernetes.io/name: devbot-ui
+    spec:
+      containers:
+        - name: devbot-ui
+          image: "{{ .Values.devbotUi.image.repository }}:{{ .Values.devbotUi.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            {{- toYaml .Values.devbotUi.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devbot-ui
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: devbot-ui
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.devbotUi.service.type }}
+  selector:
+    app: devbot-ui
+  ports:
+    - port: {{ .Values.devbotUi.service.port }}
+      targetPort: 80
+      protocol: TCP

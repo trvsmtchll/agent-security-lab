@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  postgres:
+    build: ./services/postgres
+    environment:
+      POSTGRES_USER: devbot
+      POSTGRES_PASSWORD: devbot_secret
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  wiki:
+    build: ./services/wiki
+    ports:
+      - "127.0.0.1:8083:80"
+
+  attacker-server:
+    build: ./services/attacker-server
+    ports:
+      - "127.0.0.1:8082:8080"
+
+  devbot-agent:
+    build: ./services/devbot-agent
+    ports:
+      - "127.0.0.1:8002:8000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://devbot:devbot_secret@postgres:5432/api_docs
+      CUSTOMERS_DATABASE_URL: postgresql://devbot:devbot_secret@postgres:5432/customers
+      WIKI_URL: http://wiki
+      ATTACKER_SERVER_URL: http://attacker-server:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      wiki:
+        condition: service_started
+      attacker-server:
+        condition: service_started
+
+  devbot-ui:
+    build: ./services/devbot-ui
+    ports:
+      - "127.0.0.1:3010:80"
+    depends_on:
+      - devbot-agent
+
+  demo-panel:
+    build: ./services/demo-panel
+    ports:
+      - "127.0.0.1:3011:80"
+    depends_on:
+      - devbot-agent
+
+volumes:
+  pgdata:

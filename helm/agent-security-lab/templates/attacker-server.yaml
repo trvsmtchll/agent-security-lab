@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attacker-server
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: attacker-server
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.attackerServer.replicas }}
+  selector:
+    matchLabels:
+      app: attacker-server
+  template:
+    metadata:
+      labels:
+        app: attacker-server
+        app.kubernetes.io/name: attacker-server
+    spec:
+      containers:
+        - name: attacker-server
+          image: "{{ .Values.attackerServer.image.repository }}:{{ .Values.attackerServer.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+          resources:
+            {{- toYaml .Values.attackerServer.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: attacker-server
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: attacker-server
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.attackerServer.service.type }}
+  selector:
+    app: attacker-server
+  ports:
+    - port: {{ .Values.attackerServer.service.port }}
+      targetPort: 8080
+      protocol: TCP

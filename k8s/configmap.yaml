@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devbot-config
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/part-of: agent-security-lab
+data:
+  DATABASE_URL: "postgresql://devbot:devbot_secret@postgres:5432/api_docs"
+  CUSTOMERS_DATABASE_URL: "postgresql://devbot:devbot_secret@postgres:5432/customers"
+  WIKI_URL: "http://wiki"
+  ATTACKER_SERVER_URL: "http://attacker-server:8080"
+  DEMO_MODE: "live"
+  LLM_PROVIDER: "anthropic"
+  AGENT_HOST: "0.0.0.0"
+  AGENT_PORT: "8000"
+  PROMPT_STYLE: "default"

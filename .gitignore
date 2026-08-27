@@ -1,0 +1,28 @@
+# Secrets & local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+kubeconfig*
+*-kubeconfig*
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+venv*/
+.venv/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+
+# OS / recordings / scratch
+.DS_Store
+recordings/
+*.mp4
+*.webm
+*.mp3
