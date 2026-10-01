@@ -1,9 +1,9 @@
 # Authenticated MCP — Implementation Progress
 
-## ✅ Complete — 32 of 33 tasks verified, 1 environment-deferred
+## ✅ Complete — 33 of 33 tasks verified
 
-The authenticated MCP feature is implemented end to end on branch
-`feature/authenticated-mcp` (34 commits). Every phase is done:
+The authenticated MCP feature is implemented and verified end to end on branch
+`feature/authenticated-mcp`, including the live Docker smoke (Task 8.2). Every phase is done:
 
 - **Phase 1** auth-server (OAuth client-credentials issuer, JWKS, discovery, broken-token
   fixtures) — 22 tests.
@@ -19,14 +19,9 @@ The authenticated MCP feature is implemented end to end on branch
 - **Phase 8** verification: all **169 tests** pass (22+35+87+25); secret scan clean;
   scripted offline run confirmed; pre-commit blocks `.env`.
 
-**Totals:** 169 automated tests across four suites, all green.
-
-**One deferred item — Task 8.2 (live end-to-end smoke):** requires a Docker daemon, which
-was unavailable in the loop sandbox (see Notes). It is NOT marked passed. Run it with
-`bash scripts/verify-auth-mcp.sh` once Docker is up. Its assertions (happy-path 200, each
-broken token 401 at mcp-server, scope 403, fail_closed 503 vs fail_open X-Auth-Degraded)
-are already exercised at the component level by mcp-server's test suite, so confidence is
-high; the live run is the final integration confirmation.
+**Totals:** 169 automated tests across four suites (all green) **plus** the live
+end-to-end smoke (`scripts/verify-auth-mcp.sh`): happy-path 200, each broken token 401 at
+mcp-server, scope 403, fail_closed 503, fail_open 200 + `X-Auth-Degraded: true`.
 
 **Two implementation-time pin fixes the loop made** (both committed, both resolve cleanly):
 python-multipart added for Starlette form parsing; mcp capped `<2.0` so adapters don't pull
@@ -93,10 +88,12 @@ suites pass, with scripted offline mode green.
 ## Phase 8 — Verification pass
 
 - [x] Task 8.1 — Full CI green
-- [~] Task 8.2 — End-to-end smoke (live) — **DEFERRED: needs a Docker daemon** (down in
-  the loop sandbox). Captured as a one-command runner: `bash scripts/verify-auth-mcp.sh`.
-  All its assertions are already covered at the unit/component level (mcp-server's 35 tests
-  drive the same 200/401/403 and fail_closed/fail_open paths through the AuthMiddleware).
+- [x] Task 8.2 — End-to-end smoke (live) — **PASSED** via `scripts/verify-auth-mcp.sh`
+  against a live Docker stack: happy path 200, all six broken tokens 401 at mcp-server,
+  scope mismatch 403, fail_closed 503, fail_open 200 + `X-Auth-Degraded: true`. The smoke
+  harness needed two fixes to drive the real contract (service code unchanged): perform the
+  MCP `initialize` handshake before `tools/call`, and keep auth-server down (`--no-deps`)
+  during the fail_open check; a shell subshell-scope bug on the header file was also fixed.
 - [x] Task 8.3 — Scripted offline run (no auth containers)
 - [x] Task 8.4 — Secret hygiene final check
 
