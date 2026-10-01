@@ -31,7 +31,7 @@ suites pass, with scripted offline mode green.
 - [x] Task 3.2 — The OAuth client-credentials client
 - [x] Task 3.3 — Wire MCP transport into the live agent
 - [x] Task 3.4 — Env / compose / secrets wiring
-- [ ] Task 3.5 — Regression gate
+- [x] Task 3.5 — Regression gate
 
 ## Phase 4 — Demo narrative wiring (scripted + live outage)
 
