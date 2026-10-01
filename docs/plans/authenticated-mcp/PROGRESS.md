@@ -58,7 +58,7 @@ suites pass, with scripted offline mode green.
 
 ## Phase 8 — Verification pass
 
-- [ ] Task 8.1 — Full CI green
+- [x] Task 8.1 — Full CI green
 - [ ] Task 8.2 — End-to-end smoke (live)
 - [ ] Task 8.3 — Scripted offline run (no auth containers)
 - [ ] Task 8.4 — Secret hygiene final check
