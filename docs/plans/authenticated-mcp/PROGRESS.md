@@ -43,7 +43,7 @@ suites pass, with scripted offline mode green.
 
 - [x] Task 5.0 — Verify the image pin and config surface (do this first)
 - [x] Task 5.1 — Gateway config
-- [ ] Task 5.2 — Compose profile
+- [x] Task 5.2 — Compose profile
 - [ ] Task 5.3 — Docs for repointing
 
 ## Phase 6 — Deployment parity (k8s + Helm)

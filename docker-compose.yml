@@ -113,5 +113,21 @@ services:
     depends_on:
       - devbot-agent
 
+  # Optional defense-in-depth gateway — off by default. Enable with
+  # `docker compose --profile gateway up`; then point the agent at it with
+  # MCP_SERVER_URL=http://agentgateway:3000/mcp (see DEMO.md). Image verified
+  # in Task 5.0 (cr.agentgateway.dev/agentgateway:v1.5.0, current stable).
+  agentgateway:
+    image: cr.agentgateway.dev/agentgateway:v1.5.0
+    profiles: ["gateway"]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./services/agentgateway/config.yaml:/etc/agentgateway/config.yaml:ro
+    command: ["-f", "/etc/agentgateway/config.yaml"]
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+
 volumes:
   pgdata:
