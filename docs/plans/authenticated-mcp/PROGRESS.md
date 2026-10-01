@@ -1,5 +1,39 @@
 # Authenticated MCP — Implementation Progress
 
+## ✅ Complete — 32 of 33 tasks verified, 1 environment-deferred
+
+The authenticated MCP feature is implemented end to end on branch
+`feature/authenticated-mcp` (34 commits). Every phase is done:
+
+- **Phase 1** auth-server (OAuth client-credentials issuer, JWKS, discovery, broken-token
+  fixtures) — 22 tests.
+- **Phase 2** mcp-server (FastMCP resource server, hand-written JWT/JWKS verifier,
+  default-deny scope map, RFC 9728 metadata, fail-open/closed policy) — 35 tests.
+- **Phase 3** agent integration (token client, lazy MCP transport) behind `MCP_ENABLED=false`
+  — regression-safe, 87 devbot-agent tests.
+- **Phase 4** demo narrative (scripted 401/403 beats, act→auth mapping, `auth-outage` CLI)
+  — demo-cli 25 tests.
+- **Phase 5** optional agentgateway profile (verified v1.5.0 pin, config, compose, docs).
+- **Phase 6** k8s + Helm deployment parity.
+- **Phase 7** standing-doc cross-links + executive summary.
+- **Phase 8** verification: all **169 tests** pass (22+35+87+25); secret scan clean;
+  scripted offline run confirmed; pre-commit blocks `.env`.
+
+**Totals:** 169 automated tests across four suites, all green.
+
+**One deferred item — Task 8.2 (live end-to-end smoke):** requires a Docker daemon, which
+was unavailable in the loop sandbox (see Notes). It is NOT marked passed. Run it with
+`bash scripts/verify-auth-mcp.sh` once Docker is up. Its assertions (happy-path 200, each
+broken token 401 at mcp-server, scope 403, fail_closed 503 vs fail_open X-Auth-Degraded)
+are already exercised at the component level by mcp-server's test suite, so confidence is
+high; the live run is the final integration confirmation.
+
+**Two implementation-time pin fixes the loop made** (both committed, both resolve cleanly):
+python-multipart added for Starlette form parsing; mcp capped `<2.0` so adapters don't pull
+a starlette that breaks the pinned fastapi.
+
+---
+
 Ledger for the loop executing [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 One checkbox per task; the first unchecked task is always the next target.
 A task is ticked only after its verify command(s) and the affected pytest
@@ -59,9 +93,12 @@ suites pass, with scripted offline mode green.
 ## Phase 8 — Verification pass
 
 - [x] Task 8.1 — Full CI green
-- [ ] Task 8.2 — End-to-end smoke (live)
-- [ ] Task 8.3 — Scripted offline run (no auth containers)
-- [ ] Task 8.4 — Secret hygiene final check
+- [~] Task 8.2 — End-to-end smoke (live) — **DEFERRED: needs a Docker daemon** (down in
+  the loop sandbox). Captured as a one-command runner: `bash scripts/verify-auth-mcp.sh`.
+  All its assertions are already covered at the unit/component level (mcp-server's 35 tests
+  drive the same 200/401/403 and fail_closed/fail_open paths through the AuthMiddleware).
+- [x] Task 8.3 — Scripted offline run (no auth containers)
+- [x] Task 8.4 — Secret hygiene final check
 
 ## Notes
 
