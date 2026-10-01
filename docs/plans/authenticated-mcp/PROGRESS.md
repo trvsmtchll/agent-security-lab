@@ -23,7 +23,7 @@ suites pass, with scripted offline mode green.
 - [x] Task 2.5 — Scope map and dispatch (TM-14)
 - [x] Task 2.6 — FastMCP server + RFC 9728 metadata
 - [x] Task 2.7 — Negative-path tests (threat-model-driven)
-- [ ] Task 2.8 — Compose + CI
+- [x] Task 2.8 — Compose + CI
 
 ## Phase 3 — Agent client integration (behind `mcp_enabled`, default off)
 

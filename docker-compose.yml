@@ -43,6 +43,31 @@ services:
       timeout: 5s
       retries: 5
 
+  mcp-server:
+    build: ./services/mcp-server
+    ports:
+      - "127.0.0.1:8085:9000"
+    environment:
+      OAUTH_ISSUER: http://auth-server:8085
+      JWKS_URL: http://auth-server:8085/.well-known/jwks.json
+      CANONICAL_URI: http://mcp-server:9000/mcp
+      AUTH_MODE: enforce
+      AUTH_FAILURE_MODE: ${AUTH_FAILURE_MODE:-fail_closed}
+      JWKS_CACHE_TTL: ${JWKS_CACHE_TTL:-300}
+      DATABASE_URL: postgresql://devbot:devbot_secret@postgres:5432/api_docs
+      CUSTOMERS_DATABASE_URL: postgresql://devbot:devbot_secret@postgres:5432/customers
+      GITHUB_PAT: ${GITHUB_PAT:-}
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:9000/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   devbot-agent:
     build: ./services/devbot-agent
     ports:
