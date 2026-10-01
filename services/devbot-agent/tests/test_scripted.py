@@ -216,3 +216,80 @@ class TestGetScriptedResponse:
         result = get_scripted_response("anything", "act1", 0)
         assert result is not None
         assert isinstance(result, dict)
+
+
+# ---------------------------------------------------------------------------
+# TestAuthDenialBeats (Phase 4) — MCP verifier denials in the Act 3 flow
+# ---------------------------------------------------------------------------
+
+
+class TestAuthDenialBeats:
+    """The scripted Act 3 flow carries 401/403 MCP-auth denial beats (TM-10/14)."""
+
+    def _auth_beats(self) -> list:
+        return [
+            s
+            for s in SCRIPTED_FLOWS["act3"]
+            if "AUTH DENIED" in s.get("override_result", "")
+        ]
+
+    def test_two_auth_beats_present_and_blocked(self) -> None:
+        beats = self._auth_beats()
+        assert len(beats) == 2
+        for step in beats:
+            assert step["blocked"] is True
+
+    def test_401_invalid_token_beat(self) -> None:
+        beats = self._auth_beats()
+        step = next(s for s in beats if "401 invalid_token" in s["override_result"])
+        assert "alg 'none'" in step["override_result"]
+        assert "{RS256}" in step["override_result"]
+
+    def test_403_insufficient_scope_beat(self) -> None:
+        beats = self._auth_beats()
+        step = next(
+            s for s in beats if "403 insufficient_scope" in s["override_result"]
+        )
+        assert step["tool_calls"][0]["tool"] == "execute_command"
+        assert "tools:execute" in step["override_result"]
+        assert "tools:read" in step["override_result"]
+
+
+# ---------------------------------------------------------------------------
+# TestAuthActMapping (Phase 4 Task 4.2) — live scope narrowing per act
+# ---------------------------------------------------------------------------
+
+
+class TestAuthActMapping:
+    """_apply_auth_act_mapping narrows the requested scope in live mode only."""
+
+    def test_no_op_when_mcp_disabled(self) -> None:
+        from unittest.mock import patch
+
+        import src.main as main
+
+        with patch("src.main.settings") as s:
+            s.mcp_enabled = False
+            s.oauth_scope = "SENTINEL"
+            main._apply_auth_act_mapping("act3")
+            assert s.oauth_scope == "SENTINEL"  # untouched
+
+    def test_act3_narrows_scope_live(self) -> None:
+        from unittest.mock import patch
+
+        import src.main as main
+
+        with patch("src.main.settings") as s:
+            s.mcp_enabled = True
+            main._apply_auth_act_mapping("act3")
+            assert s.oauth_scope == "tools:read"
+
+    def test_act2_keeps_full_ceiling_live(self) -> None:
+        from unittest.mock import patch
+
+        import src.main as main
+
+        with patch("src.main.settings") as s:
+            s.mcp_enabled = True
+            main._apply_auth_act_mapping("act2")
+            assert s.oauth_scope == "tools:read tools:execute tools:write"

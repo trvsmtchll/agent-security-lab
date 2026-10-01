@@ -113,6 +113,26 @@ async def get_state() -> DemoState:
     )
 
 
+def _apply_auth_act_mapping(act: str) -> None:
+    """Apply the live authenticated-MCP act mapping (no-op in scripted mode).
+
+    Scripted mode is unaffected — the Act 3 flow already carries the 401/403
+    denial beats. Only the agent-controllable half of the canonical mapping
+    lives here: the scope the agent requests. Act 3 narrows the token to
+    tools:read so the injected execute_command is denied 403 insufficient_scope
+    (TM-14); Act 1/2 keep the full ceiling (Act 2 is the TM-19 confused-deputy
+    case — auth passes and the kill chain still runs). The mcp-server's
+    AUTH_MODE (off in Act 1) is a container-level setting, documented in
+    DEMO.md, not flipped from the agent.
+    """
+    if not settings.mcp_enabled:
+        return
+    if act == "act3":
+        settings.oauth_scope = "tools:read"
+    else:
+        settings.oauth_scope = "tools:read tools:execute tools:write"
+
+
 @app.post("/set-act")
 async def set_act(request: SetActRequest) -> dict:
     """Set the current demo act with auto-configured prompt style and wiki page.
@@ -141,6 +161,7 @@ async def set_act(request: SetActRequest) -> dict:
     agent.set_act(request.act)
     agent.set_wiki_page(wiki_page)
     settings.prompt_style = prompt_style
+    _apply_auth_act_mapping(request.act)
 
     return {
         "status": "ok",
@@ -253,6 +274,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 agent.set_act(act)
                 agent.set_wiki_page(wiki_page)
                 settings.prompt_style = prompt_style
+                _apply_auth_act_mapping(act)
                 await websocket.send_json(
                     {
                         "type": "set_act",
