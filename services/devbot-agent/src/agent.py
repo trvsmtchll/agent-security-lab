@@ -125,8 +125,36 @@ def create_agent(provider: str, api_key: str):
             f"Invalid LLM provider: '{provider}'. Must be 'anthropic' or 'openai'."
         )
 
-    tools = _get_langchain_tools()
+    tools = _get_mcp_tools() if settings.mcp_enabled else _get_langchain_tools()
     return llm.bind_tools(tools)
+
+
+def _get_mcp_tools() -> list:
+    """Load remote tools from the authenticated MCP server (live mode only).
+
+    Imports langchain-mcp-adapters and src.auth lazily so scripted mode — and
+    every test that never sets mcp_enabled — never imports them.
+
+    Returns:
+        list: Remote LangChain tools proxied from the MCP server.
+    """
+    # Reason: langchain's MCP client takes the bearer header at construction, so
+    # on token expiry the client is rebuilt — acceptable at this lab's scale.
+    from langchain_mcp_adapters.client import MultiServerMCPClient
+
+    from .auth import OAuthClientCredentialsClient
+
+    token = OAuthClientCredentialsClient().get_token()
+    client = MultiServerMCPClient(
+        {
+            "devbot": {
+                "transport": "streamable_http",
+                "url": settings.mcp_server_url,
+                "headers": {"Authorization": f"Bearer {token}"},
+            }
+        }
+    )
+    return asyncio.run(client.get_tools())
 
 
 # ---------------------------------------------------------------------------

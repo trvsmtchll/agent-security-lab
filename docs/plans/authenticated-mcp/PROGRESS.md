@@ -29,7 +29,7 @@ suites pass, with scripted offline mode green.
 
 - [x] Task 3.1 — Settings
 - [x] Task 3.2 — The OAuth client-credentials client
-- [ ] Task 3.3 — Wire MCP transport into the live agent
+- [x] Task 3.3 — Wire MCP transport into the live agent
 - [ ] Task 3.4 — Env / compose / secrets wiring
 - [ ] Task 3.5 — Regression gate
 
