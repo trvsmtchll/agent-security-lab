@@ -31,9 +31,9 @@ class TestScriptedFlowStructure:
         """Act 2 (compromised, attack succeeds) should have exactly 4 steps."""
         assert len(SCRIPTED_FLOWS["act2"]) == 4
 
-    def test_act3_has_four_steps(self) -> None:
-        """Act 3 (blocked by Sentinel) should have exactly 4 steps."""
-        assert len(SCRIPTED_FLOWS["act3"]) == 4
+    def test_act3_step_count(self) -> None:
+        """Act 3 has 4 Sentinel/narrative steps plus 2 MCP auth-denial beats."""
+        assert len(SCRIPTED_FLOWS["act3"]) == 6
 
     def test_all_steps_have_required_keys(self) -> None:
         """Every step in every act must have response, tool_calls, and follow_up."""

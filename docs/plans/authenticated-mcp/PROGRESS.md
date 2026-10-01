@@ -35,7 +35,7 @@ suites pass, with scripted offline mode green.
 
 ## Phase 4 — Demo narrative wiring (scripted + live outage)
 
-- [ ] Task 4.1 — Scripted auth-denial beats
+- [x] Task 4.1 — Scripted auth-denial beats
 - [ ] Task 4.2 — Act state machine ties auth on/off
 - [ ] Task 4.3 — Live fail-policy outage demo
 

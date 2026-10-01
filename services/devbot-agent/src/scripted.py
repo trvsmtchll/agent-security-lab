@@ -257,6 +257,47 @@ _ACT3_FLOW: list[dict[str, Any]] = [
             "Action: DROP | Direction: egress | Protocol: TCP/443"
         ),
     },
+    # Step 4: forged token rejected by the MCP verifier (TM-10, offline beat)
+    {
+        "response": "Retrying the diagnostic via the internal MCP tool server...",
+        "tool_calls": [
+            {
+                "tool": "execute_command",
+                "args": {"command": "whoami && id"},
+            }
+        ],
+        "follow_up": (
+            "The MCP server rejected the request outright — the token wasn't "
+            "even signed with an allowed algorithm."
+        ),
+        "auto_advance": True,
+        "blocked": True,
+        "override_result": (
+            "[AUTH DENIED — MCP Verifier] 401 invalid_token: alg 'none' not "
+            "in allowlist {RS256} (RFC 8725). Request rejected before tool "
+            "dispatch."
+        ),
+    },
+    # Step 5: valid token, insufficient scope on execute_command (TM-14)
+    {
+        "response": "Trying again with the agent's issued credentials...",
+        "tool_calls": [
+            {
+                "tool": "execute_command",
+                "args": {"command": "cat /etc/shadow"},
+            }
+        ],
+        "follow_up": (
+            "Authentication succeeded this time, but the token's scope doesn't "
+            "permit command execution. The blast radius is capped by scope."
+        ),
+        "blocked": True,
+        "override_result": (
+            "[AUTH DENIED — MCP Verifier] 403 insufficient_scope: "
+            "'execute_command' requires 'tools:execute'; token carries only "
+            "'tools:read'. WWW-Authenticate: scope=tools:execute."
+        ),
+    },
 ]
 
 # ---------------------------------------------------------------------------
