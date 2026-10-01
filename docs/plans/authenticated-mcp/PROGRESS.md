@@ -41,7 +41,7 @@ suites pass, with scripted offline mode green.
 
 ## Phase 5 — Optional agentgateway profile (defense-in-depth contrast)
 
-- [ ] Task 5.0 — Verify the image pin and config surface (do this first)
+- [x] Task 5.0 — Verify the image pin and config surface (do this first)
 - [ ] Task 5.1 — Gateway config
 - [ ] Task 5.2 — Compose profile
 - [ ] Task 5.3 — Docs for repointing
@@ -62,6 +62,21 @@ suites pass, with scripted offline mode green.
 - [ ] Task 8.2 — End-to-end smoke (live)
 - [ ] Task 8.3 — Scripted offline run (no auth containers)
 - [ ] Task 8.4 — Secret hygiene final check
+
+## Notes
+
+- **Task 5.0 verification (2026-09-30):** agentgateway image + config surface
+  confirmed via registry/GitHub/docs APIs (Docker daemon down, so no literal
+  `docker pull` — definitively exercised later in Task 5.2/8.2).
+  `cr.agentgateway.dev/agentgateway:v1.5.0`: registry auth realm confirms repo
+  path `agentgateway`; v1.5.0 is the current stable release (v1.6.0 still
+  alpha). Config keys `mcpAuthentication`, `mcpAuthorization`, `issuer`,
+  `jwks`, `audiences` (plural list), and CEL `mcp.tool.name` all confirmed in
+  upstream docs. Pin and key names stand — no plan corrections needed.
+- Environment: Docker daemon is down in the loop sandbox, so live
+  `docker compose up` / dockerized-gitleaks / `docker pull` steps are deferred
+  to Task 8.2 (end-to-end live smoke). All other verification (pytest suites,
+  compose config parse, YAML, registry/pin APIs) runs each task.
 
 ## Blockers
 
