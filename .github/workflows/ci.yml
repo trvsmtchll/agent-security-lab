@@ -23,6 +23,11 @@ jobs:
         run: |
           pip install -r requirements-dev.txt
           python -m pytest tests/ -v
+      - name: auth-server tests
+        working-directory: services/auth-server
+        run: |
+          pip install -r requirements-dev.txt
+          python -m pytest tests/ -v
 
   secret-scan:
     runs-on: ubuntu-latest

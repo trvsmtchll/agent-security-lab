@@ -26,6 +26,23 @@ services:
     ports:
       - "127.0.0.1:8082:8080"
 
+  auth-server:
+    build: ./services/auth-server
+    ports:
+      - "127.0.0.1:8084:8085"
+    environment:
+      OAUTH_CLIENT_ID: devbot-agent
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-CHANGE_ME}
+      DEMO_FIXTURES_ENABLED: "true"
+    healthcheck:
+      # Reason: auth-server is a dependency root (mcp-server waits on it),
+      # so it gets a real healthcheck like postgres does. python:3.11-slim
+      # has no curl, so probe with urllib instead of adding curl to the image.
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8085/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   devbot-agent:
     build: ./services/devbot-agent
     ports:

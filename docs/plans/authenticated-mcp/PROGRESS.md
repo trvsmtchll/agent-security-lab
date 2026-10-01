@@ -12,7 +12,7 @@ suites pass, with scripted offline mode green.
 - [x] Task 1.3 — Token endpoint, JWKS, discovery, health
 - [x] Task 1.4 — Broken-token fixture endpoints (TM-03, TM-10, TM-11, TM-12)
 - [x] Task 1.5 — Tests
-- [ ] Task 1.6 — Compose + CI + env wiring
+- [x] Task 1.6 — Compose + CI + env wiring
 
 ## Phase 2 — mcp-server service (resource server + verifier)
 
