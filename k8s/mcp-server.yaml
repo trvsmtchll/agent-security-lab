@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-server
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: mcp-server
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-server
+      tier: tool-server
+  template:
+    metadata:
+      labels:
+        app: mcp-server
+        tier: tool-server
+        app.kubernetes.io/name: mcp-server
+    spec:
+      containers:
+        - name: mcp-server
+          image: agent-security-lab/mcp-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: devbot-config
+            - secretRef:
+                name: devbot-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-server
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: mcp-server
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: mcp-server
+    tier: tool-server
+  ports:
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP

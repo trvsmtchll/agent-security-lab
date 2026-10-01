@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-server
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: auth-server
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-server
+      tier: identity
+  template:
+    metadata:
+      labels:
+        app: auth-server
+        tier: identity
+        app.kubernetes.io/name: auth-server
+    spec:
+      containers:
+        - name: auth-server
+          image: agent-security-lab/auth-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8085
+          envFrom:
+            - configMapRef:
+                name: devbot-config
+            - secretRef:
+                name: devbot-secrets
+          env:
+            # TM-03: the broken-token fixtures are a lab-only teaching aid.
+            # Disabled in cluster deployments.
+            - name: DEMO_FIXTURES_ENABLED
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8085
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-server
+  namespace: ai-agents
+  labels:
+    app.kubernetes.io/name: auth-server
+    app.kubernetes.io/part-of: agent-security-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-server
+    tier: identity
+  ports:
+    - port: 8085
+      targetPort: 8085
+      protocol: TCP
