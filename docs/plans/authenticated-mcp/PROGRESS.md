@@ -42,7 +42,7 @@ suites pass, with scripted offline mode green.
 ## Phase 5 — Optional agentgateway profile (defense-in-depth contrast)
 
 - [x] Task 5.0 — Verify the image pin and config surface (do this first)
-- [ ] Task 5.1 — Gateway config
+- [x] Task 5.1 — Gateway config
 - [ ] Task 5.2 — Compose profile
 - [ ] Task 5.3 — Docs for repointing
 
