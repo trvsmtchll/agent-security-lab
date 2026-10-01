@@ -78,12 +78,25 @@ services:
       CUSTOMERS_DATABASE_URL: postgresql://devbot:devbot_secret@postgres:5432/customers
       WIKI_URL: http://wiki
       ATTACKER_SERVER_URL: http://attacker-server:8080
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_SERVER_URL: http://mcp-server:9000/mcp
+      OAUTH_TOKEN_URL: http://auth-server:8085/token
+      OAUTH_CLIENT_ID: devbot-agent
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-CHANGE_ME}
+      OAUTH_SCOPE: ${OAUTH_SCOPE:-tools:read tools:execute tools:write}
+      AUTH_FAILURE_MODE: ${AUTH_FAILURE_MODE:-fail_closed}
     depends_on:
       postgres:
         condition: service_healthy
       wiki:
         condition: service_started
       attacker-server:
+        condition: service_started
+      # Reason: service_started (not _healthy) so the agent still boots when
+      # MCP is off. Trade-off: a failed mcp-server image build still blocks
+      # `docker compose up devbot-agent`; scripted-only users bypass with
+      # `docker compose up devbot-agent --no-deps` (see DEMO.md).
+      mcp-server:
         condition: service_started
 
   devbot-ui:
