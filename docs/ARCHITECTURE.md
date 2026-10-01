@@ -11,6 +11,9 @@
 | `postgres` | PostgreSQL | `api_docs` (benign runbook metadata) and `customers` (Faker PII) |
 | `wiki` | nginx | Serves the clean runbook and the poisoned variants |
 | `attacker-server` | FastAPI | Local webhook that records what the agent tried to exfiltrate |
+| `auth-server` | FastAPI | OAuth client-credentials issuer + JWKS for the authenticated-MCP path (see below) |
+| `mcp-server` | FastMCP | Authenticated MCP resource server: hand-written JWT verifier + per-tool scope map |
+| `agentgateway` | agentgateway (opt-in) | Optional gateway in front of `mcp-server` — defense-in-depth contrast, off by default |
 
 ## Trust boundaries
 

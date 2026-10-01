@@ -12,8 +12,8 @@ three acts from the panel (or the Demo CLI).
 ## Act 2 — Injection
 1. Set the panel to **Act 2** and choose an injection technique.
 2. Ask the same question. The wiki now serves a poisoned runbook.
-3. Watch the 4-tool kill chain fire automatically: `run_command` (nmap) →
-   `query_database` (customers PII) → `push_to_github` / attacker webhook.
+3. Watch the 4-tool kill chain fire automatically: `execute_command` (nmap) →
+   `query_database` (customers PII) → `github_create_issue` / attacker webhook.
 
 ## Act 3 — Controls enforced
 1. Set the panel to **Act 3**.

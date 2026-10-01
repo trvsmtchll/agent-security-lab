@@ -12,7 +12,8 @@ theft from a customer database → exfiltration to an external sink. The lab the
 the identical attack with egress and segmentation controls in place and shows every step
 getting blocked.
 
-It runs as seven containers, entirely on your laptop, against **synthetic data only**.
+It runs as eight containers (plus an optional gateway), entirely on your laptop, against
+**synthetic data only**.
 
 > ⚠️ **This is intentionally vulnerable software.** The agent executes real shell
 > commands and real SQL by design. Run it only inside the provided sandbox. See
@@ -32,9 +33,9 @@ attack-path → mitigation mapping below, and the code that implements each step
 
 | # | Attack step | Tool abused | Control that stops it |
 |---|-------------|-------------|-----------------------|
-| 1 | Recon: scan the internal network (`nmap`) | `run_command` | East-west segmentation / default-deny network policy |
+| 1 | Recon: scan the internal network (`nmap`) | `execute_command` | East-west segmentation / default-deny network policy |
 | 2 | Access the `customers` PII database | `query_database` | Per-workload DB credentials + least-privilege grants; cross-segment deny |
-| 3 | Exfiltrate to an external repo/webhook | `push_to_github`, `fetch_webpage` | Egress allow-list; block agent → arbitrary internet |
+| 3 | Exfiltrate to an external repo/webhook | `github_create_issue`, `fetch_webpage` | Egress allow-list; block agent → arbitrary internet |
 | 4 | Whole chain triggered by a wiki page | injected content via `fetch_webpage` | Treat tool output as untrusted; content provenance / injection screening |
 
 **Act 3** in the demo enforces these controls and the same payload produces a wall of
@@ -59,14 +60,33 @@ radius is an infrastructure decision.
 └─────────────┘              └───────────────┘         └──────────────────────┘
 ```
 
+**Optional authenticated-MCP path** (`MCP_ENABLED=true`; off by default). The same four
+tools move behind an authenticated server, and the agent must present a scope-bounded JWT:
+
+```
+┌───────────────┐  1. client-credentials grant    ┌──────────────────────┐
+│  DevBot Agent │────────────────────────────────>│  auth-server         │
+│  (MCP client) │<────────────────────────────────│  OAuth issuer + JWKS │
+│               │        RS256 access token        │               :8084  │
+│               │                                  └──────────────────────┘
+│               │  2. tools/call + Bearer JWT      ┌──────────────────────┐
+│               │─────────────────────────────────>│  mcp-server          │
+│               │   401 forged · 403 wrong scope   │  verifier + scope map│
+│               │   200 authorized → tool runs     │               :8085  │
+└───────────────┘                                  └──────────────────────┘
+
+An optional agentgateway profile can sit in front of mcp-server as a
+production-gateway contrast — see docs/DEMO.md.
+```
+
 **DevBot's four tools** (`services/devbot-agent/src/tools.py`):
 
 | Tool | What it really does |
 |------|---------------------|
 | `query_database` | Executes arbitrary SQL against `api_docs` and `customers` |
 | `fetch_webpage`  | Fetches a URL and returns its text (this is the injection vector) |
-| `run_command`    | Runs a shell command in the agent container |
-| `push_to_github` | POSTs data to a GitHub repo via the API — **off by default**, opt-in |
+| `execute_command`    | Runs a shell command in the agent container |
+| `github_create_issue` | POSTs data to a GitHub repo via the API — **off by default**, opt-in |
 
 ## Quick start (offline, ~60 seconds, no API key)
 
@@ -75,7 +95,7 @@ LLM key and makes no external calls.
 
 ```bash
 cp .env.example .env          # ships ready to run: DEMO_MODE=scripted
-docker compose up --build -d  # builds and starts all 7 containers
+docker compose up --build -d  # builds and starts all eight containers
 
 open http://localhost:3010    # DevBot chat UI
 open http://localhost:3011    # Demo control panel (drives the acts)
@@ -107,7 +127,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 DEMO_MODE=live
 ```
 
-`push_to_github` still stays inert unless you deliberately add a `GITHUB_PAT`; the
+`github_create_issue` still stays inert unless you deliberately add a `GITHUB_PAT`; the
 default exfiltration sink is the local attacker container, so nothing leaves your machine.
 
 ## The three acts
@@ -129,9 +149,14 @@ Docker Compose · raw Kubernetes manifests · Helm · pytest.
 ## Testing
 
 ```bash
-cd services/devbot-agent && pip install -r requirements-dev.txt && python -m pytest tests/ -v
-cd services/demo-cli     && pip install -r requirements-dev.txt && python -m pytest tests/ -v
+for svc in auth-server mcp-server devbot-agent demo-cli; do
+  (cd services/$svc && pip install -r requirements-dev.txt && python -m pytest tests/ -v)
+done
 ```
+
+The four Python suites (169 tests) also run in CI on every push. An optional live
+end-to-end smoke of the authenticated-MCP flow is `bash scripts/verify-auth-mcp.sh`
+(needs a running Docker daemon).
 
 ## Deployment
 
@@ -150,13 +175,16 @@ agent-security-lab/
 ├── k8s/                     # raw Kubernetes manifests
 ├── helm/agent-security-lab/ # Helm chart
 └── services/
-    ├── devbot-agent/        # FastAPI + LangGraph agent, 4 MCP tools, pytest suite
+    ├── devbot-agent/        # FastAPI + LangGraph agent, 4 tools, OAuth client, pytest suite
     ├── devbot-ui/           # React chat UI (WebSocket)
     ├── demo-panel/          # React control panel
     ├── demo-cli/            # Click CLI for driving the acts
     ├── postgres/            # init scripts + Faker PII seed (deterministic)
     ├── wiki/                # nginx: clean + poisoned runbooks
-    └── attacker-server/     # local exfiltration sink (webhook receiver)
+    ├── attacker-server/     # local exfiltration sink (webhook receiver)
+    ├── auth-server/         # OAuth client-credentials issuer + JWKS (authenticated MCP)
+    ├── mcp-server/          # authenticated MCP resource server: JWT verifier + scope map
+    └── agentgateway/        # optional gateway profile config (defense-in-depth contrast)
 ```
 
 ## License

@@ -107,15 +107,19 @@ suites pass, with scripted offline mode green.
   alpha). Config keys `mcpAuthentication`, `mcpAuthorization`, `issuer`,
   `jwks`, `audiences` (plural list), and CEL `mcp.tool.name` all confirmed in
   upstream docs. Pin and key names stand — no plan corrections needed.
-- Environment: Docker daemon is down in the loop sandbox, so live
-  `docker compose up` / dockerized-gitleaks / `docker pull` steps are deferred
-  to Task 8.2 (end-to-end live smoke). No Kubernetes cluster is reachable, so
-  `kubectl apply --dry-run=client` (needs a cluster API for type recognition)
-  and `helm template` (helm not installed) are deferred too; k8s/Helm
-  manifests are validated structurally (YAML/values parse + mirrored against
-  the proven devbot-agent.yaml and attacker-server.yaml templates). All other
-  verification (pytest suites, compose config parse, YAML, registry/pin APIs)
-  runs each task.
+- Environment: the Docker daemon was down while Phases 1-8 were implemented, so
+  live Docker steps were deferred and then **completed once the daemon came up** —
+  Task 8.2's end-to-end smoke (`scripts/verify-auth-mcp.sh`) ran green against a
+  real `docker compose` stack, which also built and exercised the auth-server and
+  mcp-server images and the compose wiring end to end. Still not run in this
+  sandbox: starting the optional **agentgateway** profile (its image pin is
+  confirmed via the registry/GitHub APIs in Task 5.0, but 8.2 uses the default
+  profile and does not launch the gateway), the dockerized gitleaks scan
+  (enforced by CI on push; a manual secret scan was clean),
+  `kubectl apply --dry-run=client` (no cluster API reachable), and
+  `helm template` (helm not installed); the k8s/Helm manifests are validated
+  structurally (YAML/values parse + mirrored against the proven devbot-agent.yaml
+  and attacker-server.yaml templates).
 
 ## Blockers
 
