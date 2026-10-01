@@ -19,6 +19,7 @@ console = Console()
 
 AGENT_URL = "http://devbot-agent:8000"
 ATTACKER_URL = "http://attacker-server:8080"
+MCP_URL = "http://mcp-server:9000"
 
 # Reason: Timeout for HTTP requests to avoid blocking indefinitely during demos
 REQUEST_TIMEOUT = 10.0
@@ -202,6 +203,45 @@ def splunk_clear(ctx: click.Context) -> None:
         "[bold cyan]Splunk alert state is managed externally.[/bold cyan]\n"
         "  Use the Splunk UI or REST API to clear alerts.\n"
         "  Typically: POST /services/alerts/fired_alerts/<alert>/clear"
+    )
+
+
+@cli.command("auth-outage")
+@click.option("--mcp-url", default=MCP_URL, envvar="MCP_URL",
+              help="MCP server base URL.")
+@click.pass_context
+def auth_outage(ctx: click.Context, mcp_url: str) -> None:
+    """Show MCP auth fail-policy state and the JWKS-outage demo sequence.
+
+    Reads mcp-server /health (auth mode, failure policy, circuit-breaker
+    state) so an operator can watch the fail_closed/fail_open contrast while
+    taking the issuer down and back up. The outage itself is driven with
+    docker compose (steps printed below); this command is the read-only probe.
+    """
+    table = Table(title="MCP Auth Fail-Policy State", show_header=True)
+    table.add_column("Field", style="cyan")
+    table.add_column("Value", style="white")
+
+    try:
+        health = _get(f"{mcp_url}/health")
+        table.add_row("Status", health.get("status", "unknown"))
+        table.add_row("Auth mode", health.get("auth_mode", "unknown"))
+        table.add_row("Failure policy", health.get("auth_failure_mode", "unknown"))
+        table.add_row("Circuit breaker", health.get("breaker", "unknown"))
+    except Exception as exc:
+        table.add_row("Error", f"[red]{exc}[/red]")
+
+    console.print(table)
+    console.print(
+        "\n[bold]JWKS-outage demo (run these with docker compose):[/bold]\n"
+        "  1. JWKS_CACHE_TTL=60; docker compose stop auth-server\n"
+        "     -> tool calls still succeed on cached keys (warm cache, TM-08).\n"
+        "  2. docker compose restart mcp-server  (cold cache)\n"
+        "     -> fail_closed: 503 Retry-After; set AUTH_FAILURE_MODE=fail_open\n"
+        "        and restart -> same call succeeds with X-Auth-Degraded: true.\n"
+        "  3. docker compose start auth-server\n"
+        "     -> breaker half-opens then closes; normal 401/403 resume.\n"
+        "  Re-run `auth-outage` at each step to watch the breaker state."
     )
 
 

@@ -37,7 +37,7 @@ suites pass, with scripted offline mode green.
 
 - [x] Task 4.1 — Scripted auth-denial beats
 - [x] Task 4.2 — Act state machine ties auth on/off
-- [ ] Task 4.3 — Live fail-policy outage demo
+- [x] Task 4.3 — Live fail-policy outage demo
 
 ## Phase 5 — Optional agentgateway profile (defense-in-depth contrast)
 
