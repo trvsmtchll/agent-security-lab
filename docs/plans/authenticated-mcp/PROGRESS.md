@@ -10,7 +10,7 @@ suites pass, with scripted offline mode green.
 - [x] Task 1.1 — Scaffold the service
 - [x] Task 1.2 — Config and key material
 - [x] Task 1.3 — Token endpoint, JWKS, discovery, health
-- [ ] Task 1.4 — Broken-token fixture endpoints (TM-03, TM-10, TM-11, TM-12)
+- [x] Task 1.4 — Broken-token fixture endpoints (TM-03, TM-10, TM-11, TM-12)
 - [ ] Task 1.5 — Tests
 - [ ] Task 1.6 — Compose + CI + env wiring
 

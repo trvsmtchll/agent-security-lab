@@ -8,11 +8,15 @@ one file. It is NOT a production IdP (see THREAT_MODEL.md).
 
 import base64
 import binascii
+import hashlib
+import hmac
+import json
 import secrets
 import time
 import uuid
 
 import jwt
+from cryptography.hazmat.primitives import serialization
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -125,6 +129,112 @@ def discovery() -> dict:
         ],
         "scopes_supported": settings.client_scope_ceiling.split(),
     }
+
+
+# --- Invalid-token fixtures for verifier negative tests ----------------------
+# These endpoints hand out tokens that a correct verifier MUST reject. They
+# exist only so the mcp-server test suite can assert each rejection path
+# (TM-10 alg handling, TM-11 audience binding, TM-12 issuer binding). A real
+# IdP never issues these; the kill switch below keeps them out of k8s.
+
+_BROKEN_VARIANTS = {
+    "none": "alg=none carries no signature (RFC 8725 §2.1)",
+    "hs256-confusion": "symmetric alg over an asymmetric key — alg confusion",
+    "wrong-aud": "aud is some other service, not this MCP server (TM-11)",
+    "wrong-iss": "signed by a key this issuer never publishes (TM-12)",
+    "expired": "exp is in the past",
+    "hostile-kid": "kid is an injection probe, not a published key id (TM-06)",
+}
+
+
+def _baseline_claims(now: int) -> dict:
+    """Otherwise-plausible claims shared by every fixture variant."""
+    return {
+        "iss": settings.issuer,
+        "sub": settings.oauth_client_id,
+        "aud": settings.mcp_resource_uri,
+        "exp": now + settings.token_ttl_seconds,
+        "iat": now,
+        "nbf": now,
+        "jti": uuid.uuid4().hex,
+        "scope": settings.client_scope_ceiling,
+    }
+
+
+def _b64url(raw: bytes) -> str:
+    """base64url without padding, as JWS segments are encoded."""
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+
+
+def _public_pem(keypair: keys.KeyPair) -> bytes:
+    """SubjectPublicKeyInfo PEM for the given signing key."""
+    private = serialization.load_pem_private_key(
+        keypair.private_pem.encode("ascii"), password=None
+    )
+    return private.public_key().public_bytes(
+        serialization.Encoding.PEM,
+        serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+
+
+def _mint_fixture(variant: str) -> str:
+    """Return a token matching the named invalid variant."""
+    now = int(time.time())
+    claims = _baseline_claims(now)
+    current = keys.current_keypair()
+    if variant == "none":
+        return jwt.encode(claims, key="", algorithm="none")
+    if variant == "hs256-confusion":
+        # PyJWT refuses to HMAC with an asymmetric key, so assemble the JWS
+        # segments by hand: header claims HS256 under the real kid, signature
+        # is HMAC-SHA256 over the public key bytes. A verifier that confused
+        # the published RSA public key for an HMAC secret would accept it; an
+        # RS256-only allowlist (Task 2.4) rejects it outright.
+        header = {"alg": "HS256", "kid": current.kid}
+        signing_input = (
+            _b64url(json.dumps(header, separators=(",", ":")).encode())
+            + "."
+            + _b64url(json.dumps(claims, separators=(",", ":")).encode())
+        )
+        sig = hmac.new(_public_pem(current), signing_input.encode(), hashlib.sha256)
+        return signing_input + "." + _b64url(sig.digest())
+    if variant == "wrong-aud":
+        claims["aud"] = "http://some-other-service/api"
+        return jwt.encode(claims, current.private_pem, algorithm="RS256",
+                          headers={"kid": current.kid, "typ": "at+jwt"})
+    if variant == "wrong-iss":
+        claims["iss"] = "http://evil-issuer:8085"
+        foreign = keys.foreign_keypair
+        return jwt.encode(claims, foreign.private_pem, algorithm="RS256",
+                          headers={"kid": foreign.kid, "typ": "at+jwt"})
+    if variant == "expired":
+        claims.update(exp=now - 3600, iat=now - 3900, nbf=now - 3900)
+        return jwt.encode(claims, current.private_pem, algorithm="RS256",
+                          headers={"kid": current.kid, "typ": "at+jwt"})
+    if variant == "hostile-kid":
+        bad_kid = "../../etc/passwd" + "A" * 10240
+        return jwt.encode(claims, current.private_pem, algorithm="RS256",
+                          headers={"kid": bad_kid, "typ": "at+jwt"})
+    raise KeyError(variant)
+
+
+@app.get("/demo/mint-broken")
+def mint_broken(variant: str = "") -> JSONResponse:
+    """Hand out an invalid token for verifier negative tests (TM-03 gated)."""
+    if not settings.demo_fixtures_enabled:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    if variant not in _BROKEN_VARIANTS:
+        return JSONResponse(
+            {"error": "invalid_variant", "valid": sorted(_BROKEN_VARIANTS)},
+            status_code=400,
+        )
+    return JSONResponse(
+        {
+            "access_token": _mint_fixture(variant),
+            "variant": variant,
+            "why_broken": _BROKEN_VARIANTS[variant],
+        }
+    )
 
 
 @app.get("/health")
