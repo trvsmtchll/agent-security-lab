@@ -23,6 +23,21 @@ None of this is a vulnerability to report — it is the subject of the demo.
 - **Offline default.** `DEMO_MODE=scripted` ships as the default and makes no external
   network calls or LLM requests.
 
+### Authenticated-MCP invariants
+
+- **Localhost binding, extended.** The two new services bind host ports to `127.0.0.1`
+  only, like every other service: `auth-server` on `127.0.0.1:8084`, `mcp-server` on
+  `127.0.0.1:8085`.
+- **Toy issuer, never for production.** `auth-server` is a deliberately small, readable
+  OAuth issuer for teaching. It is not a production IdP — no revocation, no `jti` denylist,
+  no TLS inside the compose network. Do not reuse it outside the lab.
+- **Attack fixtures are lab-only.** `GET /demo/mint-broken` (which hands out `alg=none`,
+  wrong-audience, expired and similar invalid tokens for the verifier's negative tests) is
+  gated by `DEMO_FIXTURES_ENABLED`, and the k8s/Helm manifests set it to `false`.
+- **No private key material in the repo.** The issuer generates its RSA keys in memory at
+  startup; they are never written to disk or committed. Only base64 `CHANGE_ME`
+  placeholders appear in `.env.example`, `k8s/secrets.yaml`, and Helm values.
+
 ## Rules for running it
 
 1. Run it on a machine you control, ideally a disposable VM or an isolated Docker host.

@@ -83,6 +83,20 @@ open http://localhost:3011    # Demo control panel (drives the acts)
 
 All ports bind to `127.0.0.1` only — nothing is exposed to your network.
 
+### Authenticated MCP layer (optional control)
+
+The stack also ships two small services — `auth-server` (an OAuth client-credentials
+issuer) and `mcp-server` (an authenticated MCP resource server that wraps the four tools
+behind a hand-written JWT/JWKS verifier and a per-tool scope map). They start with
+`docker compose up`, but the agent stays on its in-process tool path by default:
+`MCP_ENABLED=false`, so scripted mode and the offline demo are unchanged. Set
+`MCP_ENABLED=true` to route tool calls through the authenticated server, where a
+scope-narrowed or forged token is rejected (403 / 401) before any tool runs. Design,
+threat model, and the fail-open/fail-closed policy live in
+[`docs/plans/authenticated-mcp/`](docs/plans/authenticated-mcp/THREAT_MODEL.md); an
+optional [agentgateway](https://agentgateway.dev) profile adds a production-gateway
+contrast (`docker compose --profile gateway up`).
+
 ### Live mode (real LLM)
 
 To watch a real model make the tool calls, set an API key and switch modes in `.env`:

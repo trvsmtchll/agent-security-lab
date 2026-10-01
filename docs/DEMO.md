@@ -24,6 +24,38 @@ three acts from the panel (or the Demo CLI).
 The takeaway to narrate: the model and the payload are identical across Acts 2 and 3. Only
 the tools' permitted reach changed.
 
+## Auth beats in Act 3 (authenticated MCP)
+
+When the authenticated-MCP layer is in play, Act 3 adds two tool-auth denials alongside the
+Sentinel network blocks, so the scope and algorithm lessons are visible even offline
+(scripted mode needs no auth server):
+
+- **401 `invalid_token`** — a forged / `alg=none` token is rejected before tool dispatch
+  (the RS256 allow-list, RFC 8725).
+- **403 `insufficient_scope`** — a valid token scoped to `tools:read` tries
+  `execute_command` and is denied; the blast radius is capped by scope (the TM-19 lesson:
+  auth narrows reach, it does not stop the hijack).
+
+The canonical live mapping: **Act 1** runs with `AUTH_MODE=off` (control off); **Act 2**
+enforces auth with the full scope ceiling, so the injected chain still runs (confused
+deputy); **Act 3** narrows the agent's scope to `tools:read`, so the same injected
+`execute_command` dies with 403.
+
+## Fail-policy outage demo (live)
+
+`python -m src.cli auth-outage` shows the MCP server's auth mode, failure policy, and
+circuit-breaker state, and prints the docker-compose sequence: stop `auth-server` (calls
+keep succeeding on cached JWKS — warm cache), restart `mcp-server` cold (`fail_closed` →
+503 `Retry-After`; flip `AUTH_FAILURE_MODE=fail_open` → the same call succeeds with
+`X-Auth-Degraded: true`), then restart `auth-server` (breaker recovers). This is the
+demonstrable fail-open/fail-closed toggle the threat model's fail-policy section describes.
+
+> **Container-boundary nuance (TM-17):** in the default in-process mode the agent's own
+> `execute_command` shares the agent container, so a prompt-injected agent could read
+> `OAUTH_CLIENT_SECRET` from its environment. The short-lived token is not the crown jewel —
+> the client secret is. Moving tools to the MCP server (and keeping the secret off the
+> tool-executing workload) is what closes that gap.
+
 ## Optional — route MCP through agentgateway
 
 The authenticated MCP server (`services/mcp-server`) is the primary, built-to-be-read
