@@ -27,7 +27,7 @@ suites pass, with scripted offline mode green.
 
 ## Phase 3 — Agent client integration (behind `mcp_enabled`, default off)
 
-- [ ] Task 3.1 — Settings
+- [x] Task 3.1 — Settings
 - [ ] Task 3.2 — The OAuth client-credentials client
 - [ ] Task 3.3 — Wire MCP transport into the live agent
 - [ ] Task 3.4 — Env / compose / secrets wiring
