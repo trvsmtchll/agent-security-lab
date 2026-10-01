@@ -54,7 +54,7 @@ suites pass, with scripted offline mode green.
 ## Phase 7 — Threat model cross-links, docs, executive summary
 
 - [x] Task 7.1 — Extend standing docs
-- [ ] Task 7.2 — Executive summary
+- [x] Task 7.2 — Executive summary
 
 ## Phase 8 — Verification pass
 
