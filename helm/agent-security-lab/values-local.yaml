@@ -47,6 +47,28 @@ devbotAgent:
       memory: "256Mi"
       cpu: "250m"
 
+authServer:
+  image:
+    tag: latest
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+mcpServer:
+  image:
+    tag: latest
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
 devbotUi:
   image:
     tag: latest

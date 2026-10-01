@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-server
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: auth-server
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.authServer.replicas }}
+  selector:
+    matchLabels:
+      app: auth-server
+      tier: identity
+  template:
+    metadata:
+      labels:
+        app: auth-server
+        tier: identity
+        app.kubernetes.io/name: auth-server
+    spec:
+      containers:
+        - name: auth-server
+          image: "{{ .Values.authServer.image.repository }}:{{ .Values.authServer.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8085
+          envFrom:
+            - configMapRef:
+                name: devbot-config
+            - secretRef:
+                name: devbot-secrets
+          env:
+            # TM-03: broken-token fixtures are a lab-only teaching aid; off in-cluster.
+            - name: DEMO_FIXTURES_ENABLED
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8085
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.authServer.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-server
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: auth-server
+    {{- include "agent-security-lab.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.authServer.service.type }}
+  selector:
+    app: auth-server
+    tier: identity
+  ports:
+    - port: {{ .Values.authServer.service.port }}
+      targetPort: 8085
+      protocol: TCP

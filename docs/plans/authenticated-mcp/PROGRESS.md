@@ -49,7 +49,7 @@ suites pass, with scripted offline mode green.
 ## Phase 6 — Deployment parity (k8s + Helm)
 
 - [x] Task 6.1 — k8s manifests
-- [ ] Task 6.2 — Helm parity
+- [x] Task 6.2 — Helm parity
 
 ## Phase 7 — Threat model cross-links, docs, executive summary
 
@@ -77,8 +77,9 @@ suites pass, with scripted offline mode green.
   `docker compose up` / dockerized-gitleaks / `docker pull` steps are deferred
   to Task 8.2 (end-to-end live smoke). No Kubernetes cluster is reachable, so
   `kubectl apply --dry-run=client` (needs a cluster API for type recognition)
-  is deferred too; k8s/Helm manifests are validated structurally (YAML parse +
-  mirrored against the proven devbot-agent.yaml pattern). All other
+  and `helm template` (helm not installed) are deferred too; k8s/Helm
+  manifests are validated structurally (YAML/values parse + mirrored against
+  the proven devbot-agent.yaml and attacker-server.yaml templates). All other
   verification (pytest suites, compose config parse, YAML, registry/pin APIs)
   runs each task.
 
