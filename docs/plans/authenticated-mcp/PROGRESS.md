@@ -17,7 +17,7 @@ suites pass, with scripted offline mode green.
 ## Phase 2 — mcp-server service (resource server + verifier)
 
 - [x] Task 2.1 — Scaffold
-- [ ] Task 2.2 — Config
+- [x] Task 2.2 — Config
 - [ ] Task 2.3 — Tools module (extraction, not move)
 - [ ] Task 2.4 — The hand-written verifier (primary enforcement point)
 - [ ] Task 2.5 — Scope map and dispatch (TM-14)
