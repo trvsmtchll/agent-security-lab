@@ -7,7 +7,7 @@ suites pass, with scripted offline mode green.
 
 ## Phase 1 — auth-server service (token issuer)
 
-- [ ] Task 1.1 — Scaffold the service
+- [x] Task 1.1 — Scaffold the service
 - [ ] Task 1.2 — Config and key material
 - [ ] Task 1.3 — Token endpoint, JWKS, discovery, health
 - [ ] Task 1.4 — Broken-token fixture endpoints (TM-03, TM-10, TM-11, TM-12)
