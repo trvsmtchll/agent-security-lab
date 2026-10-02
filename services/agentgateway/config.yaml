@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+#
+# Optional agentgateway profile — defense-in-depth contrast to the lab's
+# primary, hand-written verifier (services/mcp-server/src/verifier.py). Off by
+# default; enabled with `docker compose --profile gateway up`.
+#
+# Config surface verified against agentgateway v1.5.0 (Task 5.0): the
+# mcpAuthentication / mcpAuthorization keys and the remote-MCP `mcp: {host}`
+# target type are taken from that version's examples/mcp-authentication and
+# examples/mcp-authorization. The config surface has moved between releases —
+# re-verify key names against the pinned version's docs before bumping.
+#
+# What this demonstrates: the SAME tokens the agent already mints are accepted
+# here, `aud` is unchanged (http://mcp-server:9000/mcp), tools/list is filtered
+# by CEL, and the token is stripped before the backend. agentgateway is always
+# fail-closed with cached JWKS (no fail-open knob) — the production contrast to
+# the lab verifier's configurable AUTH_FAILURE_MODE.
+binds:
+- port: 3000
+  listeners:
+  - routes:
+    - backends:
+      - mcp:
+          targets:
+          - name: devbot
+            mcp:
+              # Remote streamable-HTTP MCP backend (the lab's resource server).
+              host: http://mcp-server:9000/mcp
+      matches:
+      - path:
+          exact: /mcp
+      - path:
+          exact: /.well-known/oauth-protected-resource/mcp
+      policies:
+        cors:
+          allowOrigins:
+          - "*"
+          allowHeaders:
+          - mcp-protocol-version
+          - content-type
+          exposeHeaders:
+          - "Mcp-Session-Id"
+        # Resource-server authentication: reject without a valid token (401).
+        mcpAuthentication:
+          mode: strict
+          issuer: http://auth-server:8085
+          audiences:
+          - http://mcp-server:9000/mcp
+          jwks:
+            url: http://auth-server:8085/.well-known/jwks.json
+          resourceMetadata:
+            resource: http://mcp-server:9000/mcp
+            scopesSupported:
+            - tools:read
+            - tools:execute
+            - tools:write
+            bearerMethodsSupported:
+            - header
+        # Tool-level RBAC mirroring services/mcp-server/src/authz.py TOOL_SCOPES.
+        # Allow-rules only — a tool/scope pair not listed here is denied
+        # (default-deny), and unlisted tools are filtered from tools/list.
+        mcpAuthorization:
+          rules:
+          - 'mcp.tool.name == "query_database" && jwt.scope.contains("tools:read")'
+          - 'mcp.tool.name == "fetch_webpage" && jwt.scope.contains("tools:read")'
+          - 'mcp.tool.name == "execute_command" && jwt.scope.contains("tools:execute")'
+          - 'mcp.tool.name == "github_create_issue" && jwt.scope.contains("tools:write")'

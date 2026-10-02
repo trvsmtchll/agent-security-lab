@@ -30,6 +30,16 @@ class Settings(BaseSettings):
     # Attacker server
     attacker_server_url: str = "http://attacker-server:8080"
 
+    # --- Authenticated MCP (default OFF; scripted mode never needs these) ---
+    mcp_enabled: bool = False
+    mcp_server_url: str = "http://mcp-server:9000/mcp"
+    oauth_token_url: str = "http://auth-server:8085/token"
+    oauth_client_id: str = "devbot-agent"
+    oauth_client_secret: str = "CHANGE_ME"
+    oauth_scope: str = "tools:read tools:execute tools:write"
+    auth_failure_mode: Literal["fail_closed", "fail_open"] = "fail_closed"
+    jwks_cache_ttl: int = 300
+
     # Server
     agent_host: str = "0.0.0.0"
     agent_port: int = 8000

@@ -1,0 +1,11 @@
+# fastmcp: pinned to the latest 2.x at implementation time (2026-09-30).
+# The <3.0 ceiling matters — 3.x and 4.x lines now exist upstream.
+fastmcp==2.14.7
+PyJWT[crypto]==2.10.1
+psycopg2-binary==2.9.10
+httpx==0.28.1
+# pydantic bumped from the plan's 2.10.4: fastmcp 2.14.7 requires
+# pydantic[email]>=2.11.7. mcp-server is an isolated service (own venv and
+# container), so this does not affect devbot-agent's pinned 2.10.4.
+pydantic[email]==2.11.7
+pydantic-settings==2.7.1

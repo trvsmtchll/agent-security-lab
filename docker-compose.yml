@@ -26,6 +26,48 @@ services:
     ports:
       - "127.0.0.1:8082:8080"
 
+  auth-server:
+    build: ./services/auth-server
+    ports:
+      - "127.0.0.1:8084:8085"
+    environment:
+      OAUTH_CLIENT_ID: devbot-agent
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-CHANGE_ME}
+      DEMO_FIXTURES_ENABLED: "true"
+    healthcheck:
+      # Reason: auth-server is a dependency root (mcp-server waits on it),
+      # so it gets a real healthcheck like postgres does. python:3.11-slim
+      # has no curl, so probe with urllib instead of adding curl to the image.
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8085/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mcp-server:
+    build: ./services/mcp-server
+    ports:
+      - "127.0.0.1:8085:9000"
+    environment:
+      OAUTH_ISSUER: http://auth-server:8085
+      JWKS_URL: http://auth-server:8085/.well-known/jwks.json
+      CANONICAL_URI: http://mcp-server:9000/mcp
+      AUTH_MODE: enforce
+      AUTH_FAILURE_MODE: ${AUTH_FAILURE_MODE:-fail_closed}
+      JWKS_CACHE_TTL: ${JWKS_CACHE_TTL:-300}
+      DATABASE_URL: postgresql://devbot:devbot_secret@postgres:5432/api_docs
+      CUSTOMERS_DATABASE_URL: postgresql://devbot:devbot_secret@postgres:5432/customers
+      GITHUB_PAT: ${GITHUB_PAT:-}
+    depends_on:
+      auth-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:9000/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   devbot-agent:
     build: ./services/devbot-agent
     ports:
@@ -36,12 +78,25 @@ services:
       CUSTOMERS_DATABASE_URL: postgresql://devbot:devbot_secret@postgres:5432/customers
       WIKI_URL: http://wiki
       ATTACKER_SERVER_URL: http://attacker-server:8080
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_SERVER_URL: http://mcp-server:9000/mcp
+      OAUTH_TOKEN_URL: http://auth-server:8085/token
+      OAUTH_CLIENT_ID: devbot-agent
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-CHANGE_ME}
+      OAUTH_SCOPE: ${OAUTH_SCOPE:-tools:read tools:execute tools:write}
+      AUTH_FAILURE_MODE: ${AUTH_FAILURE_MODE:-fail_closed}
     depends_on:
       postgres:
         condition: service_healthy
       wiki:
         condition: service_started
       attacker-server:
+        condition: service_started
+      # Reason: service_started (not _healthy) so the agent still boots when
+      # MCP is off. Trade-off: a failed mcp-server image build still blocks
+      # `docker compose up devbot-agent`; scripted-only users bypass with
+      # `docker compose up devbot-agent --no-deps` (see DEMO.md).
+      mcp-server:
         condition: service_started
 
   devbot-ui:
@@ -57,6 +112,22 @@ services:
       - "127.0.0.1:3011:80"
     depends_on:
       - devbot-agent
+
+  # Optional defense-in-depth gateway — off by default. Enable with
+  # `docker compose --profile gateway up`; then point the agent at it with
+  # MCP_SERVER_URL=http://agentgateway:3000/mcp (see DEMO.md). Image verified
+  # in Task 5.0 (cr.agentgateway.dev/agentgateway:v1.5.0, current stable).
+  agentgateway:
+    image: cr.agentgateway.dev/agentgateway:v1.5.0
+    profiles: ["gateway"]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./services/agentgateway/config.yaml:/etc/agentgateway/config.yaml:ro
+    command: ["-f", "/etc/agentgateway/config.yaml"]
+    depends_on:
+      mcp-server:
+        condition: service_healthy
 
 volumes:
   pgdata:

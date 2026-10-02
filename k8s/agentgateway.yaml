@@ -1,0 +1,74 @@
+# Optional defense-in-depth gateway (agentgateway) — NOT applied by default.
+#
+# The lab's primary enforcement point is the hand-written verifier in
+# services/mcp-server. agentgateway is an optional production-pattern contrast
+# (see docs/DEMO.md and services/agentgateway/config.yaml). It is left fully
+# commented out here so `kubectl apply -f k8s/` never starts it implicitly.
+#
+# To use it: mount services/agentgateway/config.yaml (e.g. via a ConfigMap),
+# deploy the manifest below, and point devbot-agent's MCP_SERVER_URL at
+# http://agentgateway:3000/mcp. agentgateway is always fail-closed with cached
+# JWKS (no fail-open knob) — the contrast to mcp-server's AUTH_FAILURE_MODE.
+#
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: agentgateway
+#   namespace: ai-agents
+#   labels:
+#     app.kubernetes.io/name: agentgateway
+#     app.kubernetes.io/part-of: agent-security-lab
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: agentgateway
+#       tier: gateway
+#   template:
+#     metadata:
+#       labels:
+#         app: agentgateway
+#         tier: gateway
+#         app.kubernetes.io/name: agentgateway
+#     spec:
+#       containers:
+#         - name: agentgateway
+#           image: cr.agentgateway.dev/agentgateway:v1.5.0
+#           imagePullPolicy: IfNotPresent
+#           args: ["-f", "/etc/agentgateway/config.yaml"]
+#           ports:
+#             - containerPort: 3000
+#           volumeMounts:
+#             - name: config
+#               mountPath: /etc/agentgateway
+#               readOnly: true
+#           resources:
+#             requests:
+#               memory: "128Mi"
+#               cpu: "100m"
+#             limits:
+#               memory: "128Mi"
+#               cpu: "100m"
+#       volumes:
+#         - name: config
+#           configMap:
+#             name: agentgateway-config   # kubectl create configmap agentgateway-config --from-file=services/agentgateway/config.yaml
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: agentgateway
+#   namespace: ai-agents
+#   labels:
+#     app.kubernetes.io/name: agentgateway
+#     app.kubernetes.io/part-of: agent-security-lab
+# spec:
+#   type: ClusterIP
+#   selector:
+#     app: agentgateway
+#     tier: gateway
+#   ports:
+#     - port: 3000
+#       targetPort: 3000
+#       protocol: TCP

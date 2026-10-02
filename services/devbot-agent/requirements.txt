@@ -5,6 +5,16 @@ langchain==0.3.14
 langchain-anthropic==0.3.4
 langchain-openai==0.3.0
 langgraph==0.2.60
+# Remote MCP tool adapter for live authenticated-MCP mode (imported lazily,
+# only when MCP_ENABLED=true). Pinned to the newest 0.1.x, which resolves
+# against langchain 0.3.x. Migration note: upstream has merged this package
+# into langchain itself (langchain[mcp]) in langchain 1.x — do NOT upgrade
+# langchain for this feature; revisit the import path on any 1.x migration.
+# mcp is capped <2.0: mcp 2.x pulls sse-starlette 3.x -> starlette 1.x, which
+# breaks the repo's pinned fastapi 0.115.6 (needs starlette<0.42). mcp 1.9-1.13
+# only require starlette>=0.27, so the 1.x line stays compatible.
+langchain-mcp-adapters==0.1.14
+mcp>=1.9.2,<2.0
 psycopg2-binary==2.9.10
 httpx==0.28.1
 python-dotenv==1.0.1

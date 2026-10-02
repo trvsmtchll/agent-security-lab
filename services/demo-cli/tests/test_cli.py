@@ -473,3 +473,40 @@ class TestCustomUrls:
         assert result.exit_code == 0
         mock_post.assert_called_once_with("http://localhost:8000/reset")
         mock_delete.assert_called_once_with("http://localhost:8080/exfil")
+
+
+# ---------------------------------------------------------------------------
+# TestAuthOutage (Phase 4 Task 4.3)
+# ---------------------------------------------------------------------------
+
+
+class TestAuthOutage:
+    """Tests for the auth-outage fail-policy probe command."""
+
+    @patch("src.cli._get")
+    def test_auth_outage_shows_breaker_state(
+        self, mock_get: MagicMock, runner: CliRunner
+    ) -> None:
+        """The command surfaces breaker + fail-policy from mcp-server /health."""
+        mock_get.return_value = {
+            "status": "ok",
+            "auth_mode": "enforce",
+            "auth_failure_mode": "fail_closed",
+            "breaker": "open",
+        }
+        result = runner.invoke(cli, ["auth-outage"])
+        assert result.exit_code == 0
+        mock_get.assert_called_once()
+        assert "/health" in mock_get.call_args[0][0]
+        assert "fail_closed" in result.output
+        assert "open" in result.output
+
+    @patch("src.cli._get")
+    def test_auth_outage_handles_unreachable_server(
+        self, mock_get: MagicMock, runner: CliRunner
+    ) -> None:
+        """A failed health probe is reported, not raised."""
+        mock_get.side_effect = Exception("connection refused")
+        result = runner.invoke(cli, ["auth-outage"])
+        assert result.exit_code == 0
+        assert "connection refused" in result.output

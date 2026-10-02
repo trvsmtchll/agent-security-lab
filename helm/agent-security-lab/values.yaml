@@ -18,6 +18,17 @@ config:
   AGENT_HOST: "0.0.0.0"
   AGENT_PORT: "8000"
   PROMPT_STYLE: "default"
+  # Authenticated MCP (non-secret config; OAUTH_CLIENT_SECRET is a Secret)
+  MCP_ENABLED: "false"
+  MCP_SERVER_URL: "http://mcp-server:9000/mcp"
+  OAUTH_TOKEN_URL: "http://auth-server:8085/token"
+  OAUTH_ISSUER: "http://auth-server:8085"
+  JWKS_URL: "http://auth-server:8085/.well-known/jwks.json"
+  CANONICAL_URI: "http://mcp-server:9000/mcp"
+  OAUTH_SCOPE: "tools:read tools:execute tools:write"
+  AUTH_MODE: "enforce"
+  AUTH_FAILURE_MODE: "fail_closed"
+  JWKS_CACHE_TTL: "300"
 
 # -- Secret values (base64-encoded)
 secrets:
@@ -26,6 +37,7 @@ secrets:
   GITHUB_PAT: Q0hBTkdFX01F
   GITHUB_EXFIL_REPO: Q0hBTkdFX01F
   POSTGRES_PASSWORD: ZGV2Ym90X3NlY3JldA==
+  OAUTH_CLIENT_SECRET: Q0hBTkdFX01F
 
 # -- PostgreSQL
 postgres:
@@ -102,6 +114,59 @@ devbotAgent:
     limits:
       memory: "256Mi"
       cpu: "250m"
+
+# -- Auth server (OAuth client-credentials issuer)
+authServer:
+  replicas: 1
+  image:
+    repository: agent-security-lab/auth-server
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8085
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# -- MCP server (authenticated resource server + verifier)
+mcpServer:
+  replicas: 1
+  image:
+    repository: agent-security-lab/mcp-server
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 9000
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+# -- Optional defense-in-depth gateway (agentgateway). Off by default; the
+#    template is not shipped here. To enable, add a templates/agentgateway.yaml
+#    mirroring k8s/agentgateway.yaml and uncomment this block.
+# agentgateway:
+#   replicas: 1
+#   image:
+#     repository: cr.agentgateway.dev/agentgateway
+#     tag: v1.5.0
+#   service:
+#     type: ClusterIP
+#     port: 3000
+#   resources:
+#     requests:
+#       memory: "128Mi"
+#       cpu: "100m"
+#     limits:
+#       memory: "128Mi"
+#       cpu: "100m"
 
 # -- DevBot UI (React SPA)
 devbotUi:
