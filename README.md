@@ -63,20 +63,23 @@ radius is an infrastructure decision.
 **Optional authenticated-MCP path** (`MCP_ENABLED=true`; off by default). The same four
 tools move behind an authenticated server, and the agent must present a scope-bounded JWT:
 
-```
-┌───────────────┐  1. client-credentials grant    ┌──────────────────────┐
-│  DevBot Agent │────────────────────────────────>│  auth-server         │
-│  (MCP client) │<────────────────────────────────│  OAuth issuer + JWKS │
-│               │        RS256 access token        │               :8084  │
-│               │                                  └──────────────────────┘
-│               │  2. tools/call + Bearer JWT      ┌──────────────────────┐
-│               │─────────────────────────────────>│  mcp-server          │
-│               │   401 forged · 403 wrong scope   │  verifier + scope map│
-│               │   200 authorized → tool runs     │               :8085  │
-└───────────────┘                                  └──────────────────────┘
-
-An optional agentgateway profile can sit in front of mcp-server as a
-production-gateway contrast — see docs/DEMO.md.
+```mermaid
+sequenceDiagram
+    participant A as DevBot Agent (MCP client)
+    participant I as auth-server<br/>OAuth issuer + JWKS :8084
+    participant M as mcp-server<br/>verifier + scope map :8085
+    A->>I: 1. client-credentials grant
+    I-->>A: RS256 access token (scoped, 300s)
+    A->>M: 2. tools/call + Bearer JWT
+    M->>I: fetch JWKS (cached)
+    alt forged / bad signature / wrong alg
+        M-->>A: 401 invalid_token
+    else valid token, missing scope
+        M-->>A: 403 insufficient_scope
+    else authorized
+        M-->>A: 200 — tool runs
+    end
+    Note over M: an optional agentgateway profile can front<br/>mcp-server as a production-gateway contrast (docs/DEMO.md)
 ```
 
 **DevBot's four tools** (`services/devbot-agent/src/tools.py`):
