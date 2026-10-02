@@ -11,6 +11,7 @@ regexes = [
   '''sk-xxx''',
   '''ghp_xxx''',
   '''devbot_secret''',
+  '''ZGV2Ym90X3NlY3JldA==''',
   '''CHANGE_ME''',
   '''Q0hBTkdFX01F''',
 ]
