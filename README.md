@@ -3,7 +3,7 @@
 **A hands-on lab showing how a single prompt-injection payload turns a helpful AI
 assistant into an active attacker — and where the controls that stop it belong.**
 
-![Operation Shadow Agent — normal operation, then a prompt-injection kill chain, then the same payload blocked by egress and segmentation controls](docs/demo.gif)
+![Operation Shadow Agent — normal operation, then a prompt-injection kill chain, then the same payload blocked by segmentation, least-privilege, and egress controls plus the authenticated-MCP verifier (401 forged token, 403 insufficient scope)](docs/demo.gif)
 
 A LangGraph agent named *DevBot* is given four real tools (SQL, HTTP fetch, shell,
 GitHub API) and pointed at an internal wiki. When one wiki page is poisoned with hidden
